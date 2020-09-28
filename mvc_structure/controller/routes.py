@@ -2,22 +2,22 @@ from datetime import datetime
 from flask import render_template, flash, redirect, url_for, request
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.urls import url_parse
-from mvc_structure import mvc_structure, db
+from mvc_structure import app, db
 from mvc_structure.controller.forms import LoginForm, RegistrationForm, EditProfileForm, \
     EmptyForm, PostForm, ResetPasswordRequestForm, ResetPasswordForm
 from mvc_structure.model.models import User, Post
 from mvc_structure.controller.email import send_password_reset_email
 
 
-@mvc_structure.before_request
+@app.before_request
 def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
 
 
-@mvc_structure.route('/', methods=['GET', 'POST'])
-@mvc_structure.route('/index', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
     form = PostForm()
@@ -29,7 +29,7 @@ def index():
         return redirect(url_for('index'))
     page = request.args.get('page', 1, type=int)
     posts = current_user.followed_posts().paginate(
-        page, mvc_structure.config['POSTS_PER_PAGE'], False)
+        page, app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('index', page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('index', page=posts.prev_num) \
@@ -39,12 +39,12 @@ def index():
                            prev_url=prev_url)
 
 
-@mvc_structure.route('/explore')
+@app.route('/explore')
 @login_required
 def explore():
     page = request.args.get('page', 1, type=int)
     posts = Post.query.order_by(Post.timestamp.desc()).paginate(
-        page, mvc_structure.config['POSTS_PER_PAGE'], False)
+        page, app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('explore', page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('explore', page=posts.prev_num) \
@@ -53,7 +53,7 @@ def explore():
                            next_url=next_url, prev_url=prev_url)
 
 
-@mvc_structure.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -71,13 +71,13 @@ def login():
     return render_template('login.html', title='Sign In', form=form)
 
 
-@mvc_structure.route('/logout')
+@app.route('/logout')
 def logout():
     logout_user()
     return redirect(url_for('index'))
 
 
-@mvc_structure.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -92,7 +92,7 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
-@mvc_structure.route('/reset_password_request', methods=['GET', 'POST'])
+@app.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -107,7 +107,7 @@ def reset_password_request():
                            title='Reset Password', form=form)
 
 
-@mvc_structure.route('/reset_password/<token>', methods=['GET', 'POST'])
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -123,13 +123,13 @@ def reset_password(token):
     return render_template('reset_password.html', form=form)
 
 
-@mvc_structure.route('/user/<username>')
+@app.route('/user/<username>')
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     page = request.args.get('page', 1, type=int)
     posts = user.posts.order_by(Post.timestamp.desc()).paginate(
-        page, mvc_structure.config['POSTS_PER_PAGE'], False)
+        page, app.config['POSTS_PER_PAGE'], False)
     next_url = url_for('user', username=user.username, page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('user', username=user.username, page=posts.prev_num) \
@@ -139,7 +139,7 @@ def user(username):
                            next_url=next_url, prev_url=prev_url, form=form)
 
 
-@mvc_structure.route('/edit_profile', methods=['GET', 'POST'])
+@app.route('/edit_profile', methods=['GET', 'POST'])
 @login_required
 def edit_profile():
     form = EditProfileForm(current_user.username)
@@ -156,7 +156,7 @@ def edit_profile():
                            form=form)
 
 
-@mvc_structure.route('/follow/<username>', methods=['POST'])
+@app.route('/follow/<username>', methods=['POST'])
 @login_required
 def follow(username):
     form = EmptyForm()
@@ -176,7 +176,7 @@ def follow(username):
         return redirect(url_for('index'))
 
 
-@mvc_structure.route('/unfollow/<username>', methods=['POST'])
+@app.route('/unfollow/<username>', methods=['POST'])
 @login_required
 def unfollow(username):
     form = EmptyForm()

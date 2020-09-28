@@ -12,31 +12,31 @@ from config import Config
 
 
 
-mvc_structure = Flask(__name__, template_folder='./view')
-mvc_structure.config.from_object(Config)
-db = SQLAlchemy(mvc_structure)
-migrate = Migrate(mvc_structure, db)
-login = LoginManager(mvc_structure)
+app = Flask(__name__, template_folder='./view')
+app.config.from_object(Config)
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+login = LoginManager(app)
 login.login_view = 'login'
-mail = Mail(mvc_structure)
-bootstrap = Bootstrap(mvc_structure)
-moment = Moment(mvc_structure)
+mail = Mail(app)
+bootstrap = Bootstrap(app)
+moment = Moment(app)
 
-if not mvc_structure.debug:
-    if mvc_structure.config['MAIL_SERVER']:
+if not app.debug:
+    if app.config['MAIL_SERVER']:
         auth = None
-        if mvc_structure.config['MAIL_USERNAME'] or mvc_structure.config['MAIL_PASSWORD']:
-            auth = (mvc_structure.config['MAIL_USERNAME'], mvc_structure.config['MAIL_PASSWORD'])
+        if app.config['MAIL_USERNAME'] or app.config['MAIL_PASSWORD']:
+            auth = (app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
         secure = None
-        if mvc_structure.config['MAIL_USE_TLS']:
+        if app.config['MAIL_USE_TLS']:
             secure = ()
         mail_handler = SMTPHandler(
-            mailhost=(mvc_structure.config['MAIL_SERVER'], mvc_structure.config['MAIL_PORT']),
-            fromaddr='no-reply@' + mvc_structure.config['MAIL_SERVER'],
-            toaddrs=mvc_structure.config['ADMINS'], subject='Microblog Failure',
+            mailhost=(app.config['MAIL_SERVER'], app.config['MAIL_PORT']),
+            fromaddr='no-reply@' + app.config['MAIL_SERVER'],
+            toaddrs=app.config['ADMINS'], subject='Microblog Failure',
             credentials=auth, secure=secure)
         mail_handler.setLevel(logging.ERROR)
-        mvc_structure.logger.addHandler(mail_handler)
+        app.logger.addHandler(mail_handler)
 
     if not os.path.exists('logs'):
         os.mkdir('logs')
@@ -45,10 +45,10 @@ if not mvc_structure.debug:
     file_handler.setFormatter(logging.Formatter(
         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
     file_handler.setLevel(logging.INFO)
-    mvc_structure.logger.addHandler(file_handler)
+    app.logger.addHandler(file_handler)
 
-    mvc_structure.logger.setLevel(logging.INFO)
-    mvc_structure.logger.info('Microblog startup')
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Microblog startup')
 
 from mvc_structure.controller import errors, routes
 from mvc_structure.model import models
